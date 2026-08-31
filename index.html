@@ -37,6 +37,7 @@
       font-weight: bold;
       border-radius: 6px;
       text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .bus-card {
       background-color: white;
@@ -59,15 +60,8 @@
       margin-bottom: 12px;
       font-style: italic;
     }
-    .action-links {
-      text-align: center;
+    .action-container {
       margin-top: 20px;
-    }
-    .action-links a {
-      color: #0066cc;
-      text-decoration: none;
-      padding: 8px;
-      display: inline-block;
     }
   </style>
 </head>
@@ -135,18 +129,18 @@
     if (currentUrl.indexOf("journey=morning") !== -1) {
       container.innerHTML = "<h3>Morning: To School</h3>" +
                             "<div id='times'>Loading live times...</div>" +
-                            "<div class='action-links'>" +
-                            "<a href='?journey=morning'>[ Refresh Times ]</a><br><br>" +
-                            "<a href='?'>&laquo; Back to Menu</a>" +
+                            "<div class='action-container'>" +
+                            "<a href='?journey=morning' class='menu-btn'>Refresh Times</a>" +
+                            "<a href='?' class='menu-btn'>&laquo; Back to Menu</a>" +
                             "</div>";
       getBus("490006576B", "times", "Enfield Bus Garage");
 
     } else if (currentUrl.indexOf("journey=afternoon") !== -1) {
       container.innerHTML = "<h3>Afternoon: To Home</h3>" +
                             "<div id='times'>Loading live times...</div>" +
-                            "<div class='action-links'>" +
-                            "<a href='?journey=afternoon'>[ Refresh Times ]</a><br><br>" +
-                            "<a href='?'>&laquo; Back to Menu</a>" +
+                            "<div class='action-container'>" +
+                            "<a href='?journey=afternoon' class='menu-btn'>Refresh Times</a>" +
+                            "<a href='?' class='menu-btn'>&laquo; Back to Menu</a>" +
                             "</div>";
       getBus("490010857N2", "times", "Parsonage Lane");
     }
