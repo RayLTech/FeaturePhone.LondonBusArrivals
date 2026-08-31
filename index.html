@@ -7,58 +7,39 @@
   <style>
     /* Keep CSS very basic for older mobile browsers */
     body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f6f8;
-      color: #333;
+      font-family: Arial, sans-serif; margin: 0; padding: 0;
+      background-color: #f4f6f8; color: #333;
     }
     .header {
-      background-color: #e32017;
-      color: white;
-      padding: 12px;
-      text-align: center;
+      background-color: #e32017; color: white; padding: 12px; text-align: center;
     }
     .header h2 { margin: 0; font-size: 18px; }
     .container { padding: 12px; }
     
     .menu-btn {
-      display: block;
-      background-color: white;
-      border: 1px solid #ccc;
-      padding: 14px;
-      margin-bottom: 12px;
-      text-decoration: none;
-      color: #000;
-      font-weight: bold;
-      border-radius: 6px;
-      text-align: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: block; background-color: white; border: 1px solid #ccc; padding: 14px;
+      margin-bottom: 12px; text-decoration: none; color: #000; font-weight: bold;
+      border-radius: 6px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     
     .bus-card {
-      background-color: white;
-      border-left: 5px solid #e32017;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      background-color: white; border-left: 5px solid #e32017; padding: 10px;
+      margin-bottom: 10px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .bus-time {
-      color: #e32017;
-      font-weight: bold;
-      font-size: 16px;
-      margin-top: 5px;
-      display: block;
+      color: #e32017; font-weight: bold; font-size: 16px; margin-top: 5px; display: block;
     }
     .stop-name {
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 12px;
-      font-style: italic;
+      font-size: 14px; color: #666; margin-bottom: 12px; font-style: italic;
     }
     .action-container { margin-top: 20px; }
     .divider { border: 0; border-top: 1px solid #ccc; margin: 15px 0; }
+    
+    h3 { margin-top: 0; }
+    h4 { 
+      margin: 15px 0 8px 0; color: #555; font-size: 15px; 
+      border-bottom: 1px solid #ddd; padding-bottom: 4px; 
+    }
   </style>
 </head>
 <body>
@@ -69,14 +50,15 @@
 
   <div class="container" id="app-container">
     <!-- Default Menu View -->
-    <a href="?journey=morning" class="menu-btn">Morning: 191 To School &raquo;</a>
-    <a href="?journey=afternoon" class="menu-btn">Afternoon: 191 To Home &raquo;</a>
-    <a href="?journey=enfield" class="menu-btn">Enfield Town: W8 & Connections &raquo;</a>
+    <a href="?journey=morning" class="menu-btn">Morning: 191 Direct &raquo;</a>
+    <a href="?journey=morning_alt" class="menu-btn">Alt: 307/121/313 &rarr; W8 &raquo;</a>
+    <a href="?journey=afternoon" class="menu-btn">Afternoon: 191 Direct &raquo;</a>
+    <a href="?journey=afternoon_alt" class="menu-btn">Alt: W8 &rarr; 307/121/313 &raquo;</a>
   </div>
 
   <script>
-    // Upgraded function now accepts a 'targetLine' parameter
-    function getBus(naptanId, divId, fallbackName, targetLine) {
+    // Upgraded function now accepts a comma-separated list of target lines
+    function getBus(naptanId, divId, fallbackName, targetLines) {
       var xhr = new XMLHttpRequest();
       xhr.open("GET", "https://api.tfl.gov.uk/StopPoint/" + naptanId + "/Arrivals", true);
       
@@ -87,8 +69,18 @@
             var buses = [];
             
             for (var i = 0; i < data.length; i++) {
-              // If targetLine is "all", we push every bus. Otherwise, only the specific line.
-              if (targetLine === "all" || data[i].lineId.toUpperCase() === targetLine) {
+              var line = data[i].lineId.toUpperCase();
+              var targets = targetLines.split(",");
+              var isMatch = false;
+              
+              // Check if the current bus matches any of our target lines
+              for (var k = 0; k < targets.length; k++) {
+                if (targets[k] === line) {
+                  isMatch = true;
+                }
+              }
+              
+              if (targetLines === "all" || isMatch) {
                 buses.push(data[i]);
               }
             }
@@ -99,15 +91,15 @@
             var html = "<div class='stop-name'>Stop: " + stationName + "</div>";
             
             var count = 0;
-            // Increased to show up to 6 buses so connections aren't hidden
-            for (var j = 0; j < buses.length && j < 6; j++) {
+            // Display up to 3 buses per leg to keep the screen from getting too long
+            for (var j = 0; j < buses.length && j < 3; j++) {
               var mins = Math.round(buses[j].timeToStation / 60);
               var timeText = mins === 0 ? "Due now" : mins + " mins";
               var dest = buses[j].destinationName || "Unknown";
-              var line = buses[j].lineId.toUpperCase();
+              var lineId = buses[j].lineId.toUpperCase();
               
               html += "<div class='bus-card'>";
-              html += "<b>" + line + "</b> to " + dest;
+              html += "<b>" + lineId + "</b> to " + dest;
               html += "<span class='bus-time'>&rarr; " + timeText + "</span>";
               html += "</div>";
               
@@ -128,39 +120,52 @@
     var currentUrl = window.location.search;
     var container = document.getElementById("app-container");
 
-    if (currentUrl.indexOf("journey=morning") !== -1) {
-      container.innerHTML = "<h3>Morning: To School</h3>" +
-                            "<div id='times'>Loading live times...</div>" +
+    // The order of these IF statements matters so the browser doesn't confuse "morning" with "morning_alt"
+    if (currentUrl.indexOf("journey=morning_alt") !== -1) {
+      container.innerHTML = "<h3>Alternative: To School</h3>" +
+                            "<h4>Leg 1: To Enfield Town</h4>" +
+                            "<div id='times-1'>Loading...</div>" +
+                            "<h4>Leg 2: Town to School</h4>" +
+                            "<div id='times-2'>Loading...</div>" +
+                            "<div class='action-container'>" +
+                            "<a href='?journey=morning_alt' class='menu-btn'>Refresh Times</a>" +
+                            "<a href='?' class='menu-btn'>&laquo; Back to Menu</a></div>";
+      
+      // Look for 121, 307, or 313 leaving Southbury Station towards Town
+      getBus("490006576B", "times-1", "Southbury Station", "121,307,313");
+      // Look for W8 leaving Enfield Town towards School
+      getBus("490006589V", "times-2", "Enfield Town Station", "W8");
+
+    } else if (currentUrl.indexOf("journey=morning") !== -1) {
+      container.innerHTML = "<h3>Morning: 191 Direct</h3>" +
+                            "<div id='times'>Loading...</div>" +
                             "<div class='action-container'>" +
                             "<a href='?journey=morning' class='menu-btn'>Refresh Times</a>" +
-                            "<a href='?' class='menu-btn'>&laquo; Back to Menu</a>" +
-                            "</div>";
-      // Fetch ONLY the 191
+                            "<a href='?' class='menu-btn'>&laquo; Back to Menu</a></div>";
       getBus("490006576B", "times", "Enfield Bus Garage", "191");
 
+    } else if (currentUrl.indexOf("journey=afternoon_alt") !== -1) {
+      container.innerHTML = "<h3>Alternative: To Home</h3>" +
+                            "<h4>Leg 1: To Enfield Town</h4>" +
+                            "<div id='times-1'>Loading...</div>" +
+                            "<h4>Leg 2: Town to Home</h4>" +
+                            "<div id='times-2'>Loading...</div>" +
+                            "<div class='action-container'>" +
+                            "<a href='?journey=afternoon_alt' class='menu-btn'>Refresh Times</a>" +
+                            "<a href='?' class='menu-btn'>&laquo; Back to Menu</a></div>";
+      
+      // Look for W8 leaving Parsonage Lane towards Town
+      getBus("490010857N2", "times-1", "Parsonage Lane", "W8");
+      // Look for 121, 307, or 313 leaving Town towards Ponders End
+      getBus("490006588R", "times-2", "Genotin Road (Enfield Town)", "121,307,313");
+
     } else if (currentUrl.indexOf("journey=afternoon") !== -1) {
-      container.innerHTML = "<h3>Afternoon: To Home</h3>" +
-                            "<div id='times'>Loading live times...</div>" +
+      container.innerHTML = "<h3>Afternoon: 191 Direct</h3>" +
+                            "<div id='times'>Loading...</div>" +
                             "<div class='action-container'>" +
                             "<a href='?journey=afternoon' class='menu-btn'>Refresh Times</a>" +
-                            "<a href='?' class='menu-btn'>&laquo; Back to Menu</a>" +
-                            "</div>";
-      // Fetch ONLY the 191
+                            "<a href='?' class='menu-btn'>&laquo; Back to Menu</a></div>";
       getBus("490010857N2", "times", "Parsonage Lane", "191");
-
-    } else if (currentUrl.indexOf("journey=enfield") !== -1) {
-      container.innerHTML = "<h3>W8 & Connections</h3>" +
-                            "<div id='times-v'>Loading Chase Farm direction...</div>" +
-                            "<hr class='divider'>" +
-                            "<div id='times-r'>Loading Edmonton direction...</div>" +
-                            "<div class='action-container'>" +
-                            "<a href='?journey=enfield' class='menu-btn'>Refresh Times</a>" +
-                            "<a href='?' class='menu-btn'>&laquo; Back to Menu</a>" +
-                            "</div>";
-      
-      // Fetch ALL buses ("all") for both sides of the road in Enfield Town
-      getBus("490006589V", "times-v", "Enfield Town Station (Stop V)", "all");
-      getBus("490006588R", "times-r", "Enfield Town / Genotin Road (Stop R)", "all");
     }
   </script>
 </body>
