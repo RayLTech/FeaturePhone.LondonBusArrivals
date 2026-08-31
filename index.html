@@ -7,16 +7,17 @@
 </head>
 <body>
 
-  <h3>Morning: To School</h3>
-  <div id="morning">Loading...</div>
-  <hr>
-  
-  <h3>Afternoon: To Home</h3>
-  <div id="afternoon">Loading...</div>
+  <!-- This container will be swapped out based on what link she clicks -->
+  <div id="app-container">
+    <h2>191 Bus Tracker</h2>
+    <p><a href="?journey=morning">-> Morning: To School</a></p>
+    <br>
+    <p><a href="?journey=afternoon">-> Afternoon: To Home</a></p>
+  </div>
 
   <script>
-    // Using older ES5 JavaScript so basic mobile browsers can read it
-    function getBus(naptanId, divId) {
+    // 1. The function to fetch the bus data (same as before)
+    function getBus(naptanId, divId, fallbackName) {
       var xhr = new XMLHttpRequest();
       xhr.open("GET", "https://api.tfl.gov.uk/StopPoint/" + naptanId + "/Arrivals", true);
       
@@ -24,34 +25,30 @@
         if (xhr.readyState === 4) {
           if (xhr.status === 200) {
             var data = JSON.parse(xhr.responseText);
-            var html = "";
             var buses = [];
             
-            // Filter only for the 191 bus
             for (var i = 0; i < data.length; i++) {
-              if (data[i].lineId === "191") {
-                buses.push(data[i]);
-              }
+              if (data[i].lineId === "191") buses.push(data[i]);
             }
             
-            // Sort by closest arrival time
-            buses.sort(function(a, b) { 
-              return a.timeToStation - b.timeToStation; 
-            });
+            buses.sort(function(a, b) { return a.timeToStation - b.timeToStation; });
             
-            // Display the next 4 buses
+            var stationName = buses.length > 0 ? buses[0].stationName : fallbackName;
+            var html = "<p><i>Stop: " + stationName + "</i></p>";
+            
+            var count = 0;
             for (var j = 0; j < buses.length && j < 4; j++) {
               var mins = Math.round(buses[j].timeToStation / 60);
               var timeText = mins === 0 ? "Due now" : mins + " mins";
-              html += "<p><b>191:</b> " + timeText + "</p>";
+              var dest = buses[j].destinationName || "Unknown";
+              
+              html += "<p><b>191</b> to " + dest + "<br>-> " + timeText + "</p>";
+              count++;
             }
             
-            if (html === "") {
-              html = "<p>No buses currently expected.</p>";
-            }
+            if (count === 0) html += "<p>No buses currently expected.</p>";
             
             document.getElementById(divId).innerHTML = html;
-            
           } else {
             document.getElementById(divId).innerHTML = "<p>Network error.</p>";
           }
@@ -60,9 +57,29 @@
       xhr.send();
     }
 
-    // Trigger the searches
-    getBus("490006576B", "morning");
-    getBus("490010857N2", "afternoon");
+    // 2. Read the web address to see which page we should load
+    var currentUrl = window.location.search;
+    var container = document.getElementById("app-container");
+
+    if (currentUrl.indexOf("journey=morning") !== -1) {
+      // Show Morning Page
+      container.innerHTML = "<h3>Morning: To School</h3>" +
+                            "<div id='times'>Loading...</div><br><hr>" +
+                            "<p><a href='?journey=morning'>[ Refresh Times ]</a></p>" +
+                            "<p><a href='?'>&laquo; Back to Menu</a></p>";
+      
+      getBus("490006576B", "times", "Enfield Bus Garage");
+
+    } else if (currentUrl.indexOf("journey=afternoon") !== -1) {
+      // Show Afternoon Page
+      container.innerHTML = "<h3>Afternoon: To Home</h3>" +
+                            "<div id='times'>Loading...</div><br><hr>" +
+                            "<p><a href='?journey=afternoon'>[ Refresh Times ]</a></p>" +
+                            "<p><a href='?'>&laquo; Back to Menu</a></p>";
+      
+      getBus("490010857N2", "times", "Parsonage Lane");
+    }
+    // If neither is in the URL, the script does nothing and leaves the main menu on the screen.
   </script>
 </body>
 </html>
