@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>191 Bus</title>
+</head>
+<body>
+
+  <h3>Morning: To School</h3>
+  <div id="morning">Loading...</div>
+  <hr>
+  
+  <h3>Afternoon: To Home</h3>
+  <div id="afternoon">Loading...</div>
+
+  <script>
+    // Using older ES5 JavaScript so basic mobile browsers can read it
+    function getBus(naptanId, divId) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "https://api.tfl.gov.uk/StopPoint/" + naptanId + "/Arrivals", true);
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) {
+            var data = JSON.parse(xhr.responseText);
+            var html = "";
+            var buses = [];
+            
+            // Filter only for the 191 bus
+            for (var i = 0; i < data.length; i++) {
+              if (data[i].lineId === "191") {
+                buses.push(data[i]);
+              }
+            }
+            
+            // Sort by closest arrival time
+            buses.sort(function(a, b) { 
+              return a.timeToStation - b.timeToStation; 
+            });
+            
+            // Display the next 4 buses
+            for (var j = 0; j < buses.length && j < 4; j++) {
+              var mins = Math.round(buses[j].timeToStation / 60);
+              var timeText = mins === 0 ? "Due now" : mins + " mins";
+              html += "<p><b>191:</b> " + timeText + "</p>";
+            }
+            
+            if (html === "") {
+              html = "<p>No buses currently expected.</p>";
+            }
+            
+            document.getElementById(divId).innerHTML = html;
+            
+          } else {
+            document.getElementById(divId).innerHTML = "<p>Network error.</p>";
+          }
+        }
+      };
+      xhr.send();
+    }
+
+    // Trigger the searches
+    getBus("490006576B", "morning");
+    getBus("490010857N2", "afternoon");
+  </script>
+</body>
+</html>
