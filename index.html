@@ -52,12 +52,11 @@
     <!-- Default Menu View -->
     <a href="?journey=morning" class="menu-btn">Morning: 191 Direct &raquo;</a>
     <a href="?journey=morning_alt" class="menu-btn">Alt: 307/121/313 &rarr; W8 &raquo;</a>
-    <a href="?journey=afternoon" class="menu-btn">Afternoon: 191 Direct &raquo;</a>
-    <a href="?journey=afternoon_alt" class="menu-btn">Alt: W8 &rarr; 307/121/313 &raquo;</a>
+    <a href="?journey=afternoon" class="menu-btn">Afternoon: Lower School (191) &raquo;</a>
+    <a href="?journey=afternoon_alt" class="menu-btn">Alt: Lower School (W8) &raquo;</a>
   </div>
 
   <script>
-    // Upgraded function now accepts a comma-separated list of target lines
     function getBus(naptanId, divId, fallbackName, targetLines) {
       var xhr = new XMLHttpRequest();
       xhr.open("GET", "https://api.tfl.gov.uk/StopPoint/" + naptanId + "/Arrivals", true);
@@ -73,7 +72,6 @@
               var targets = targetLines.split(",");
               var isMatch = false;
               
-              // Check if the current bus matches any of our target lines
               for (var k = 0; k < targets.length; k++) {
                 if (targets[k] === line) {
                   isMatch = true;
@@ -91,7 +89,6 @@
             var html = "<div class='stop-name'>Stop: " + stationName + "</div>";
             
             var count = 0;
-            // Display up to 3 buses per leg to keep the screen from getting too long
             for (var j = 0; j < buses.length && j < 3; j++) {
               var mins = Math.round(buses[j].timeToStation / 60);
               var timeText = mins === 0 ? "Due now" : mins + " mins";
@@ -120,7 +117,6 @@
     var currentUrl = window.location.search;
     var container = document.getElementById("app-container");
 
-    // The order of these IF statements matters so the browser doesn't confuse "morning" with "morning_alt"
     if (currentUrl.indexOf("journey=morning_alt") !== -1) {
       container.innerHTML = "<h3>Alternative: To School</h3>" +
                             "<h4>Leg 1: To Enfield Town</h4>" +
@@ -131,9 +127,7 @@
                             "<a href='?journey=morning_alt' class='menu-btn'>Refresh Times</a>" +
                             "<a href='?' class='menu-btn'>&laquo; Back to Menu</a></div>";
       
-      // Look for 121, 307, or 313 leaving Southbury Station towards Town
       getBus("490006576B", "times-1", "Southbury Station", "121,307,313");
-      // Look for W8 leaving Enfield Town towards School
       getBus("490006589V", "times-2", "Enfield Town Station", "W8");
 
     } else if (currentUrl.indexOf("journey=morning") !== -1) {
@@ -146,7 +140,7 @@
 
     } else if (currentUrl.indexOf("journey=afternoon_alt") !== -1) {
       container.innerHTML = "<h3>Alternative: To Home</h3>" +
-                            "<h4>Leg 1: To Enfield Town</h4>" +
+                            "<h4>Leg 1: Lower School to Town</h4>" +
                             "<div id='times-1'>Loading...</div>" +
                             "<h4>Leg 2: Town to Home</h4>" +
                             "<div id='times-2'>Loading...</div>" +
@@ -154,18 +148,17 @@
                             "<a href='?journey=afternoon_alt' class='menu-btn'>Refresh Times</a>" +
                             "<a href='?' class='menu-btn'>&laquo; Back to Menu</a></div>";
       
-      // Look for W8 leaving Parsonage Lane towards Town
-      getBus("490010857N2", "times-1", "Parsonage Lane", "W8");
-      // Look for 121, 307, or 313 leaving Town towards Ponders End
+      getBus("490008625S", "times-1", "Kenilworth Cres (Lower School)", "W8");
       getBus("490006588R", "times-2", "Genotin Road (Enfield Town)", "121,307,313");
 
     } else if (currentUrl.indexOf("journey=afternoon") !== -1) {
-      container.innerHTML = "<h3>Afternoon: 191 Direct</h3>" +
+      container.innerHTML = "<h3>Afternoon: Lower School to Home</h3>" +
                             "<div id='times'>Loading...</div>" +
                             "<div class='action-container'>" +
                             "<a href='?journey=afternoon' class='menu-btn'>Refresh Times</a>" +
                             "<a href='?' class='menu-btn'>&laquo; Back to Menu</a></div>";
-      getBus("490010857N2", "times", "Parsonage Lane", "191");
+      
+      getBus("490008625S", "times", "Kenilworth Cres (Lower School)", "191");
     }
   </script>
 </body>
