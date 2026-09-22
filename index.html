@@ -51,15 +51,16 @@
   <div class="container" id="app-container">
     <!-- Default Menu View -->
     <a href="?journey=morning" class="menu-btn">Morning: 191 Direct &raquo;</a>
-    <a href="?journey=morning_alt" class="menu-btn">Alt: 307/121/313 &rarr; W8 &raquo;</a>
+    <a href="?journey=morning_alt" class="menu-btn">Alt: 307/121/313 &rarr; W8/191 &raquo;</a>
     <a href="?journey=afternoon" class="menu-btn">Afternoon: Lower School (191) &raquo;</a>
     <a href="?journey=afternoon_alt" class="menu-btn">Alt: Lower School (W8) &raquo;</a>
   </div>
 
   <script>
-    function getBus(naptanId, divId, fallbackName, targetLines) {
+    function getBus(naptanIds, divId, fallbackName, targetLines) {
       var xhr = new XMLHttpRequest();
-      xhr.open("GET", "https://api.tfl.gov.uk/StopPoint/" + naptanId + "/Arrivals", true);
+      // The API allows us to fetch multiple stops at once by separating IDs with a comma
+      xhr.open("GET", "https://api.tfl.gov.uk/StopPoint/" + naptanIds + "/Arrivals", true);
       
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
@@ -85,18 +86,21 @@
             
             buses.sort(function(a, b) { return a.timeToStation - b.timeToStation; });
             
-            var stationName = buses.length > 0 ? buses[0].stationName : fallbackName;
-            var html = "<div class='stop-name'>Stop: " + stationName + "</div>";
+            var html = "<div class='stop-name'>Location: " + fallbackName + "</div>";
             
             var count = 0;
-            for (var j = 0; j < buses.length && j < 3; j++) {
+            // Increased loop to 4 so she sees a good mix if W8 and 191 are both arriving
+            for (var j = 0; j < buses.length && j < 4; j++) {
               var mins = Math.round(buses[j].timeToStation / 60);
               var timeText = mins === 0 ? "Due now" : mins + " mins";
               var dest = buses[j].destinationName || "Unknown";
               var lineId = buses[j].lineId.toUpperCase();
+              var exactStop = buses[j].stationName || "";
               
               html += "<div class='bus-card'>";
               html += "<b>" + lineId + "</b> to " + dest;
+              // Shows exactly which stop the bus is at (e.g., Stop M or Stop V)
+              html += "<div style='font-size:12px; color:#555; margin-top:2px;'>" + exactStop + "</div>";
               html += "<span class='bus-time'>&rarr; " + timeText + "</span>";
               html += "</div>";
               
@@ -128,15 +132,21 @@
                             "<a href='?' class='menu-btn'>&laquo; Back to Menu</a></div>";
       
       getBus("490006576B", "times-1", "Southbury Station", "121,307,313");
-      getBus("490006589V", "times-2", "Enfield Town Station", "W8");
+      // Fetching BOTH Stop V (for W8) and Stop M (for 191) at the same time
+      getBus("490006589V,490001101M", "times-2", "Enfield Town Station", "W8,191");
 
     } else if (currentUrl.indexOf("journey=morning") !== -1) {
       container.innerHTML = "<h3>Morning: 191 Direct</h3>" +
-                            "<div id='times'>Loading...</div>" +
+                            "<h4>From Ponders End</h4>" +
+                            "<div id='times-1'>Loading...</div>" +
+                            "<h4>From Enfield Town</h4>" +
+                            "<div id='times-2'>Loading...</div>" +
                             "<div class='action-container'>" +
                             "<a href='?journey=morning' class='menu-btn'>Refresh Times</a>" +
                             "<a href='?' class='menu-btn'>&laquo; Back to Menu</a></div>";
-      getBus("490006576B", "times", "Enfield Bus Garage", "191");
+      
+      getBus("490006576B", "times-1", "Enfield Bus Garage", "191");
+      getBus("490001101M", "times-2", "Enfield Town (Stop M)", "191");
 
     } else if (currentUrl.indexOf("journey=afternoon_alt") !== -1) {
       container.innerHTML = "<h3>Alternative: To Home</h3>" +
