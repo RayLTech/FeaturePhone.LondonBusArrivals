@@ -57,10 +57,9 @@
   </div>
 
   <script>
-    function getBus(naptanIds, divId, fallbackName, targetLines) {
+    function getBus(naptanId, divId, fallbackName, targetLines) {
       var xhr = new XMLHttpRequest();
-      // The API allows us to fetch multiple stops at once by separating IDs with a comma
-      xhr.open("GET", "https://api.tfl.gov.uk/StopPoint/" + naptanIds + "/Arrivals", true);
+      xhr.open("GET", "https://api.tfl.gov.uk/StopPoint/" + naptanId + "/Arrivals", true);
       
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
@@ -89,8 +88,8 @@
             var html = "<div class='stop-name'>Location: " + fallbackName + "</div>";
             
             var count = 0;
-            // Increased loop to 4 so she sees a good mix if W8 and 191 are both arriving
-            for (var j = 0; j < buses.length && j < 4; j++) {
+            // Limit to 3 buses per stop to keep the screen tidy
+            for (var j = 0; j < buses.length && j < 3; j++) {
               var mins = Math.round(buses[j].timeToStation / 60);
               var timeText = mins === 0 ? "Due now" : mins + " mins";
               var dest = buses[j].destinationName || "Unknown";
@@ -99,7 +98,6 @@
               
               html += "<div class='bus-card'>";
               html += "<b>" + lineId + "</b> to " + dest;
-              // Shows exactly which stop the bus is at (e.g., Stop M or Stop V)
               html += "<div style='font-size:12px; color:#555; margin-top:2px;'>" + exactStop + "</div>";
               html += "<span class='bus-time'>&rarr; " + timeText + "</span>";
               html += "</div>";
@@ -126,14 +124,17 @@
                             "<h4>Leg 1: To Enfield Town</h4>" +
                             "<div id='times-1'>Loading...</div>" +
                             "<h4>Leg 2: Town to School</h4>" +
-                            "<div id='times-2'>Loading...</div>" +
+                            "<div id='times-2-w8'>Loading W8...</div>" +
+                            "<div id='times-2-191'>Loading 191...</div>" +
                             "<div class='action-container'>" +
                             "<a href='?journey=morning_alt' class='menu-btn'>Refresh Times</a>" +
                             "<a href='?' class='menu-btn'>&laquo; Back to Menu</a></div>";
       
+      // Fetch Leg 1
       getBus("490006576B", "times-1", "Southbury Station", "121,307,313");
-      // Fetching BOTH Stop V (for W8) and Stop M (for 191) at the same time
-      getBus("490006589V,490001101M", "times-2", "Enfield Town Station", "W8,191");
+      // Fetch Leg 2 as entirely separate requests
+      getBus("490006589V", "times-2-w8", "Enfield Town (Stop V)", "W8");
+      getBus("490001101M", "times-2-191", "Enfield Town (Stop M)", "191");
 
     } else if (currentUrl.indexOf("journey=morning") !== -1) {
       container.innerHTML = "<h3>Morning: 191 Direct</h3>" +
